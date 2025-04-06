@@ -72,9 +72,11 @@ kina-1eoyoe
 ## FAQs
 
 **Q:** Sometimes I get a DNS lookup failure, e.g. `Unable to connect to the server: dial tcp: lookup kina-277rtg-uksouth-ey6vbz58.hcp.uksouth.azmk8s.io: no such host`:
+
 **A:** Because we create the AKS Clusters asynchronously, sometimes we've actually configured `kubectl` before Microsoft has published a DNS record for the cluster. Wait a few minutes and try again.
 
 **Q:** How can I setup cilium clustermesh using this?
+
 **A:** Simply install Cilium on two or more clusters you create with this tool, e.g.:
 
 On Cluster 1: `$ cilium install --version 1.17.2 --set azure.resourceGroup="<resource group name>" --set cluster.id=1 --set ipam.operator.clusterPoolIPv4PodCIDRList="{10.1.0.0/16}"` then enable clustermesh with `$ cilium clustermesh enable --context "<cluster name>"`
@@ -86,4 +88,5 @@ Now you're ready to enable clustermesh between these clusters, `cilium clusterme
 Finally, run a connection test: `$ cilium connectivity test --context "<cluster 1>" --multi-cluster "<cluster 2>"`
 
 **Q:** Why wouldn't this tool just use the Cilium Dataplane that AKS ships with?
+
 **A:** Microsoft's distribution of Cilium does not support Clustermesh.
