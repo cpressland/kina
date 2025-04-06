@@ -1,3 +1,5 @@
+"""Module for Kubectl-related functionality."""
+
 from pathlib import Path
 from time import sleep
 
@@ -10,8 +12,25 @@ kubeconfig_path = Path("~/.kube/config").expanduser()
 
 
 def add_cluster_to_kubeconfig(
-    credential: DefaultAzureCredential, subscription_id: str, resource_group_name: str, cluster_name: str
+    credential: DefaultAzureCredential,
+    subscription_id: str,
+    resource_group_name: str,
+    cluster_name: str,
 ) -> None:
+    """Add AKS cluster credentials to kubeconfig.
+
+    Args:
+        credential (DefaultAzureCredential): Azure credentials for authentication.
+        subscription_id (str): Azure subscription ID.
+        resource_group_name (str): Name of the resource group containing the AKS cluster.
+        cluster_name (str): Name of the AKS cluster.
+        rich_progress (Progress | None, optional): Optional Rich Progress instance for progress tracking. Defaults to None.
+        rich_task (TaskID | None, optional): Optional task ID for progress tracking. Defaults to None.
+
+    Returns:
+        None
+
+    """  # noqa: E501
     aks_client = ContainerServiceClient(credential, subscription_id)
     for _ in range(20):
         try:
@@ -34,6 +53,15 @@ def add_cluster_to_kubeconfig(
 
 
 def set_current_context(cluster_name: str) -> None:
+    """Set the current context in kubeconfig to the specified AKS cluster.
+
+    Args:
+        cluster_name (str): Name of the AKS cluster to set as current context.
+
+    Returns:
+        None
+
+    """
     if kubeconfig_path.exists():
         kubeconfig = yaml.safe_load(kubeconfig_path.read_text())
         for context in kubeconfig["contexts"]:
@@ -44,6 +72,15 @@ def set_current_context(cluster_name: str) -> None:
 
 
 def remove_from_kubeconfig(resource_group_name: str) -> None:
+    """Remove AKS cluster credentials from kubeconfig.
+
+    Args:
+        resource_group_name (str): Name of the resource group containing the AKS cluster.
+
+    Returns:
+        None
+
+    """
     if kubeconfig_path.exists():
         kubeconfig = yaml.safe_load(kubeconfig_path.read_text())
         kubeconfig["clusters"] = [c for c in kubeconfig["clusters"] if resource_group_name not in c["name"]]
@@ -53,6 +90,12 @@ def remove_from_kubeconfig(resource_group_name: str) -> None:
 
 
 def cleanup_kubeconfig() -> None:
+    """Clean up kubeconfig by removing all clusters, contexts, and users that start with "kina-".
+
+    Returns:
+        None
+
+    """
     if kubeconfig_path.exists():
         kubeconfig = yaml.safe_load(kubeconfig_path.read_text())
         kubeconfig["clusters"] = [c for c in kubeconfig["clusters"] if not c["name"].startswith("kina-")]
