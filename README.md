@@ -76,9 +76,13 @@ kina-1eoyoe
 
 **Q:** How can I setup cilium clustermesh using this?
 **A:** Simply install Cilium on two or more clusters you create with this tool, e.g.:
+
 On Cluster 1: `$ cilium install --version 1.17.2 --set azure.resourceGroup="<resource group name>" --set cluster.id=1 --set ipam.operator.clusterPoolIPv4PodCIDRList="{10.1.0.0/16}"` then enable clustermesh with `$ cilium clustermesh enable --context "<cluster name>"`
+
 On Cluster 2: `$ cilium install --version 1.17.2 --set azure.resourceGroup="<resource group name" --set cluster.id=2 --set ipam.operator.clusterPoolIPv4PodCIDRList="{10.4.0.0/16}"` then enable clustermesh with `$ cilium clustermesh enable --context "<cluster name>"`
+
 Now you're ready to enable clustermesh between these clusters, `cilium clustermesh connect --context "<cluster 1>" --destination-context "<cluster 2>"`
+
 Finally, run a connection test: `$ cilium connectivity test --context "<cluster 1>" --multi-cluster "<cluster 2>"`
 
 **Q:** Why wouldn't this tool just use the Cilium Dataplane that AKS ships with?
