@@ -1,16 +1,17 @@
 """Module for Kubectl-related functionality."""
 
+from os import environ
 from pathlib import Path
 from time import sleep
 
 import yaml
-from os import environ
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.containerservice import ContainerServiceClient
 
-path = environ['KUBECONFIG'] if "KUBECONFIG" in environ else "~/.kube/config"
+path = environ.get("KUBECONFIG", "~/.kube/config")
 kubeconfig_path = Path(path).expanduser()
+
 
 def add_cluster_to_kubeconfig(
     credential: DefaultAzureCredential,
