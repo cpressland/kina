@@ -4,12 +4,13 @@ from pathlib import Path
 from time import sleep
 
 import yaml
+from os import environ
 from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.containerservice import ContainerServiceClient
 
-kubeconfig_path = Path("~/.kube/config").expanduser()
-
+path = environ['KUBECONFIG'] if "KUBECONFIG" in environ else "~/.kube/config"
+kubeconfig_path = Path(path).expanduser()
 
 def add_cluster_to_kubeconfig(
     credential: DefaultAzureCredential,
