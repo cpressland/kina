@@ -90,6 +90,10 @@ def create_aks_clusters(
                         "availabilityZones": get_location_availability_zones(credential, subscription_id, location),
                     },
                 ],
+                "securityProfile": {
+                    "imageCleaner": { "enabled": True }
+                },
+                "oidcIssuerProfile": { "enabled": True },
                 "networkProfile": {
                     "networkPlugin": "none" if no_cni else "azure",
                     "networkPluginMode": None if no_cni else "overlay",
