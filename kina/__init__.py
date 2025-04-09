@@ -61,6 +61,7 @@ def cluster_create(
         rg_task = progress.add_task("Creating Resource Group...", total=1)
         vnet_task = progress.add_task("Creating Virtual Networks...", total=cluster_count + 1)
         aks_task = progress.add_task("Creating AKS Clusters...", total=cluster_count + 1)
+        network_iam = progress.add_task("Configuring Network IAM...", total=cluster_count + 1)
         kubectl_task = progress.add_task("Adding AKS Cluster to Kubeconfig...", total=cluster_count + 1)
 
         rg_name = create_resource_group(
@@ -87,14 +88,16 @@ def cluster_create(
             rich_progress=progress,
             rich_task=aks_task,
         )
+        progress.update(aks_task, description=f"Created AKS Clusters: {', '.join(clusters)}", advance=1)
         for cluster in clusters:
+            progress.update(network_iam, description=f"Configuring Network IAM: {cluster}", advance=1)
             configure_network_iam(
                 credential=credential,
                 subscription_id=subscription_id,
                 resource_group=rg_name,
                 cluster_name=cluster,
             )
-        progress.update(aks_task, description=f"Created AKS Clusters: {', '.join(clusters)}", advance=1)
+        progress.update(network_iam, description=f"Configured Network IAM: {', '.join(clusters)}", advance=1)
         for cluster in clusters:
             progress.update(kubectl_task, description=f"Adding AKS Cluster to Kubeconfig: {cluster}", advance=1)
             add_cluster_to_kubeconfig(
