@@ -44,7 +44,7 @@ def cluster_create(
         no_cni (bool): Disable CNI for the AKS clusters. This is useful for testing purposes.
 
     """
-    from kina.azure.kubernetes import create_aks_clusters
+    from kina.azure.kubernetes import configure_network_iam, create_aks_clusters
     from kina.azure.resource_groups import create_resource_group
     from kina.azure.virtual_networks import create_virtual_networks
     from kina.kubectl import add_cluster_to_kubeconfig, set_current_context
@@ -87,6 +87,13 @@ def cluster_create(
             rich_progress=progress,
             rich_task=aks_task,
         )
+        for cluster in clusters:
+            configure_network_iam(
+                credential=credential,
+                subscription_id=subscription_id,
+                resource_group=rg_name,
+                cluster_name=cluster,
+            )
         progress.update(aks_task, description=f"Created AKS Clusters: {', '.join(clusters)}", advance=1)
         for cluster in clusters:
             progress.update(kubectl_task, description=f"Adding AKS Cluster to Kubeconfig: {cluster}", advance=1)
