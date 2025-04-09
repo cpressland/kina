@@ -2,6 +2,7 @@
 
 from time import sleep
 
+from azure.core.exceptions import HttpResponseError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
 from azure.mgmt.containerservice import ContainerServiceClient
@@ -141,6 +142,6 @@ def configure_network_iam(
                 },
             )
             break
-        except KeyError:
+        except (KeyError, HttpResponseError):
             sleep(20)
             continue
