@@ -5,7 +5,7 @@ from pathlib import Path
 from time import sleep
 
 import yaml
-from azure.core.exceptions import ResourceNotFoundError
+from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.containerservice import ContainerServiceClient
 
@@ -38,7 +38,7 @@ def add_cluster_to_kubeconfig(
         try:
             credentials = aks_client.managed_clusters.list_cluster_admin_credentials(resource_group_name, cluster_name)
             break
-        except ResourceNotFoundError:
+        except (ResourceNotFoundError, ResourceExistsError):
             sleep(20)
     kubeconfig = credentials.kubeconfigs[0].value.decode("utf-8")
 
