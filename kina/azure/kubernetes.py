@@ -38,6 +38,7 @@ def create_aks_clusters(
     virtual_network_names: list[str],
     resource_group_name: str,
     no_cni: bool = False,
+    network_dataplane: str | None = None,
     rich_progress: Progress | None = None,
     rich_task: TaskID | None = None,
 ) -> list[str]:
@@ -49,6 +50,7 @@ def create_aks_clusters(
         virtual_network_names (list[str]): List of virtual network names to create AKS clusters in.
         resource_group_name (str): Name of the resource group to create the AKS clusters in.
         no_cni (bool, optional): Flag to disable CNI. Defaults to False.
+        network_dataplane (str |  None, optional): Network Dataplane to use. Defaults to None.
         rich_progress (Progress | None, optional): Optional Rich Progress instance for progress tracking. Defaults to None.
         rich_task (TaskID | None, optional): Optional task ID for progress tracking. Defaults to None.
 
@@ -96,6 +98,7 @@ def create_aks_clusters(
                 "networkProfile": {
                     "networkPlugin": "none" if no_cni else "azure",
                     "networkPluginMode": None if no_cni else "overlay",
+                    "networkDataplane": network_dataplane,
                     "networkMode": "transparent",
                     "loadBalancerSku": "standard",
                     "podCidr": vnet.tags.get("pod-network"),
