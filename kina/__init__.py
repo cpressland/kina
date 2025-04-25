@@ -36,12 +36,22 @@ def cluster_create(
             help="Disable CNI for the AKS clusters. This is useful for testing purposes.",
         ),
     ] = False,
+    network_dataplane: Annotated[
+        str | None,
+        typer.Option(
+            "--network-dataplane",
+            "--dataplane",
+            "-d",
+            help=" Network Dataplane to use. Defaults to None.",
+        ),
+    ] = None,
 ) -> None:
     """Create a new Kina AKS Cluster.
 
     Args:
         locations (str): Azure Locations to create Kubernetes Clusters in, comma separated.
         no_cni (bool): Disable CNI for the AKS clusters. This is useful for testing purposes.
+        network_dataplane (str | None): Network Dataplane to use. Defaults to None.
 
     """
     from kina.azure.kubernetes import configure_network_iam, create_aks_clusters
@@ -85,6 +95,7 @@ def cluster_create(
             virtual_network_names=vnets,
             resource_group_name=rg_name,
             no_cni=no_cni,
+            network_dataplane=network_dataplane,
             rich_progress=progress,
             rich_task=aks_task,
         )
