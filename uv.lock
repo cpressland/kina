@@ -266,6 +266,7 @@ dependencies = [
     { name = "azure-mgmt-network" },
     { name = "azure-mgmt-resource" },
     { name = "pyyaml" },
+    { name = "requests" },
     { name = "typer" },
 ]
 
@@ -283,6 +284,7 @@ requires-dist = [
     { name = "azure-mgmt-network", specifier = ">=28.1.0" },
     { name = "azure-mgmt-resource", specifier = ">=23.3.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
+    { name = "requests", specifier = ">=2.32.3" },
     { name = "typer", specifier = ">=0.15.3" },
 ]
 
