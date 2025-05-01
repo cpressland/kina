@@ -1,19 +1,22 @@
 [project]
 name = "kina"
-version = "1.2.1"
+version = "0.0.0"
 description = "A simple tool to create ephemeral AKS Clusters"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "azure-identity>=1.21.0",
     "azure-mgmt-authorization>=4.0.0",
-    "azure-mgmt-compute>=34.0.0",
-    "azure-mgmt-containerservice>=34.1.0",
+    "azure-mgmt-compute>=34.1.0",
+    "azure-mgmt-containerservice>=35.0.0",
     "azure-mgmt-network>=28.1.0",
     "azure-mgmt-resource>=23.3.0",
     "pyyaml>=6.0.2",
-    "typer>=0.15.2",
+    "typer>=0.15.3",
 ]
+
+[dependency-groups]
+dev = ["ruff>=0.11.7"]
 
 [project.scripts]
 kina = "kina:app"
