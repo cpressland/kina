@@ -209,5 +209,30 @@ def remove(name: str) -> None:
     typer.echo(f"Removed Kina Instance from Kubeconfig: {name}")
 
 
+@app.command(name="version")
+def version() -> None:
+    """Display the installed version of Kina."""
+    from importlib.metadata import version
+
+    import requests
+
+    console = Console()
+    current_version = version("kina")
+    try:
+        latest_version = requests.get("https://pypi.org/pypi/kina/json", timeout=2).json()["info"]["version"]
+    except requests.RequestException:
+        latest_version = None
+
+    if latest_version is None or current_version == latest_version:
+        console.print(f"Kina version: [green]{current_version}[/]")
+    else:
+        console.print(f"Kina version: [red]{current_version}[/]")
+        if latest_version:
+            console.print(f"Latest version: [green]{latest_version}[/]")
+            console.print('Update available! Run [bold]"uv tool update kina"[/] to update to the latest version.')
+        else:
+            console.print("Unable to check for updates.")
+
+
 if __name__ == "__main__":
     app()
