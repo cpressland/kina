@@ -71,6 +71,21 @@ wheels = [
 ]
 
 [[package]]
+name = "azure-mgmt-containerregistry"
+version = "14.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "azure-common" },
+    { name = "azure-mgmt-core" },
+    { name = "isodate" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f0/4e/bae97dfe20cd172d91b832fc1554f21f55403f2e2cb8eafbfa725491921e/azure_mgmt_containerregistry-14.0.0.tar.gz", hash = "sha256:7383f1c5547bcffe76e411edd8250d55c34cddf5ef6804d5875c163cca66c4b5", size = 1181541, upload-time = "2025-04-29T03:28:32.518Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d8/51/558350cc79c1516509fd56922aea75f7cb374e0f8d9be0bc7933cd510c9c/azure_mgmt_containerregistry-14.0.0-py3-none-any.whl", hash = "sha256:224e823beffe317c59ca4b482df5ee0b2977c3f44cdae59b165513fb47b32b8e", size = 1697813, upload-time = "2025-04-29T03:28:34.774Z" },
+]
+
+[[package]]
 name = "azure-mgmt-containerservice"
 version = "35.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -262,6 +277,7 @@ dependencies = [
     { name = "azure-identity" },
     { name = "azure-mgmt-authorization" },
     { name = "azure-mgmt-compute" },
+    { name = "azure-mgmt-containerregistry" },
     { name = "azure-mgmt-containerservice" },
     { name = "azure-mgmt-network" },
     { name = "azure-mgmt-resource" },
@@ -280,6 +296,7 @@ requires-dist = [
     { name = "azure-identity", specifier = ">=1.21.0" },
     { name = "azure-mgmt-authorization", specifier = ">=4.0.0" },
     { name = "azure-mgmt-compute", specifier = ">=34.1.0" },
+    { name = "azure-mgmt-containerregistry", specifier = ">=14.0.0" },
     { name = "azure-mgmt-containerservice", specifier = ">=35.0.0" },
     { name = "azure-mgmt-network", specifier = ">=28.1.0" },
     { name = "azure-mgmt-resource", specifier = ">=23.3.0" },
