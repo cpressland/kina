@@ -5,9 +5,10 @@ description = "A simple tool to create ephemeral AKS Clusters"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "azure-identity>=1.21.0",
+    "azure-identity>=1.22.0",
     "azure-mgmt-authorization>=4.0.0",
     "azure-mgmt-compute>=34.1.0",
+    "azure-mgmt-containerregistry>=14.0.0",
     "azure-mgmt-containerservice>=35.0.0",
     "azure-mgmt-network>=28.1.0",
     "azure-mgmt-resource>=23.3.0",
@@ -17,7 +18,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff>=0.11.7"]
+dev = ["ruff>=0.11.9"]
 
 [project.scripts]
 kina = "kina:app"
