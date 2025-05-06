@@ -6,24 +6,20 @@ from time import sleep
 
 import yaml
 from azure.core.exceptions import ResourceExistsError, ResourceNotFoundError
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.containerservice import ContainerServiceClient
+
+from kina.azure import client_container
 
 path = environ.get("KUBECONFIG", "~/.kube/config")
 kubeconfig_path = Path(path).expanduser()
 
 
 def add_cluster_to_kubeconfig(
-    credential: DefaultAzureCredential,
-    subscription_id: str,
     resource_group_name: str,
     cluster_name: str,
 ) -> None:
     """Add AKS cluster credentials to kubeconfig.
 
     Args:
-        credential (DefaultAzureCredential): Azure credentials for authentication.
-        subscription_id (str): Azure subscription ID.
         resource_group_name (str): Name of the resource group containing the AKS cluster.
         cluster_name (str): Name of the AKS cluster.
         rich_progress (Progress | None, optional): Optional Rich Progress instance for progress tracking. Defaults to None.
@@ -33,10 +29,12 @@ def add_cluster_to_kubeconfig(
         None
 
     """  # noqa: E501
-    aks_client = ContainerServiceClient(credential, subscription_id)
     for _ in range(20):
         try:
-            credentials = aks_client.managed_clusters.list_cluster_admin_credentials(resource_group_name, cluster_name)
+            credentials = client_container.managed_clusters.list_cluster_admin_credentials(
+                resource_group_name,
+                cluster_name,
+            )
             break
         except (ResourceNotFoundError, ResourceExistsError):
             sleep(20)

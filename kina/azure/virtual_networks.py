@@ -2,10 +2,10 @@
 
 from ipaddress import IPv4Network, ip_network
 
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.network.models._models_py3 import VirtualNetwork
 from rich.progress import Progress, TaskID
+
+from kina.azure import client_network, subscription_id
 
 _base_cidr = ip_network("10.0.0.0/16")
 
@@ -28,7 +28,6 @@ def generate_cidrs() -> tuple[IPv4Network, IPv4Network, IPv4Network]:
 
 
 def create_vnet(
-    client: NetworkManagementClient,
     resource_group_name: str,
     region: str,
     vnet_cidr: IPv4Network,
@@ -38,7 +37,6 @@ def create_vnet(
     """Create a virtual network in the specified region.
 
     Args:
-        client (NetworkManagementClient): Azure Network Management client.
         resource_group_name (str): Name of the resource group to create the virtual network in.
         region (str): Azure region to create the virtual network in.
         vnet_cidr (IPv4Network): CIDR block for the virtual network.
@@ -49,7 +47,7 @@ def create_vnet(
         VirtualNetwork: The created virtual network object.
 
     """
-    return client.virtual_networks.begin_create_or_update(
+    return client_network.virtual_networks.begin_create_or_update(
         resource_group_name=resource_group_name,
         virtual_network_name=f"{resource_group_name}-{region}",
         parameters={
@@ -65,16 +63,12 @@ def create_vnet(
 
 
 def peer_vnets(
-    client: NetworkManagementClient,
-    subscription_id: str,
     resource_group_name: str,
     vnets: list[str],
 ) -> None:
     """Peer multiple virtual networks together.
 
     Args:
-        client (NetworkManagementClient): Azure Network Management client.
-        subscription_id (str): Azure subscription ID.
         resource_group_name (str): Name of the resource group containing the virtual networks.
         vnets (list[str]): List of virtual network names to be peered.
 
@@ -82,7 +76,7 @@ def peer_vnets(
     for i in range(len(vnets)):
         peers = vnets[:i] + vnets[i + 1 :]
         for peer in peers:
-            client.virtual_network_peerings.begin_create_or_update(
+            client_network.virtual_network_peerings.begin_create_or_update(
                 resource_group_name=resource_group_name,
                 virtual_network_name=vnets[i],
                 virtual_network_peering_name=f"{vnets[i].split('-')[-1]}-to-{peer.split('-')[-1]}",
@@ -99,7 +93,6 @@ def peer_vnets(
 
 
 def create_subnet(
-    client: NetworkManagementClient,
     resource_group_name: str,
     vnet_name: str,
     subnet_name: str,
@@ -108,7 +101,6 @@ def create_subnet(
     """Create a subnet in the specified virtual network.
 
     Args:
-        client (NetworkManagementClient): Azure Network Management client.
         resource_group_name (str): Name of the resource group containing the virtual network.
         vnet_name (str): Name of the virtual network to create the subnet in.
         subnet_name (str): Name of the subnet to create.
@@ -118,7 +110,7 @@ def create_subnet(
         None
 
     """
-    client.subnets.begin_create_or_update(
+    client_network.subnets.begin_create_or_update(
         resource_group_name=resource_group_name,
         virtual_network_name=vnet_name,
         subnet_name=subnet_name,
@@ -127,8 +119,6 @@ def create_subnet(
 
 
 def create_virtual_networks(
-    credential: DefaultAzureCredential,
-    subscription_id: str,
     locations: list[str],
     resource_group_name: str,
     rich_progress: Progress | None = None,
@@ -137,8 +127,6 @@ def create_virtual_networks(
     """Create virtual networks in the specified locations.
 
     Args:
-        credential (DefaultAzureCredential): Azure credentials for authentication.
-        subscription_id (str): Azure subscription ID.
         locations (list[str]): List of Azure locations to create virtual networks in.
         resource_group_name (str): Name of the resource group to create the virtual networks in.
         rich_progress (Progress | None, optional): Optional Rich Progress instance for progress tracking. Defaults to None.
@@ -148,7 +136,6 @@ def create_virtual_networks(
         list[str]: List of virtual network names created.
 
     """  # noqa: E501
-    network_client = NetworkManagementClient(credential, subscription_id)
     networks = []
     for location in locations:
         if rich_progress and rich_task is not None:
@@ -159,7 +146,6 @@ def create_virtual_networks(
             )
         virual_network_cidr, pod_network_cidr, service_network_cidr = generate_cidrs()
         vnet = create_vnet(
-            network_client,
             resource_group_name,
             location,
             virual_network_cidr,
@@ -168,7 +154,7 @@ def create_virtual_networks(
         )
         networks.append(vnet.name)
         subnets = [str(network) for network in ip_network(virual_network_cidr).subnets(new_prefix=24)]
-        create_subnet(network_client, resource_group_name, vnet.name, "kube_nodes", subnets[0])
+        create_subnet(resource_group_name, vnet.name, "kube_nodes", subnets[0])
     if len(networks) > 1:
-        peer_vnets(network_client, subscription_id, resource_group_name, networks)
+        peer_vnets(subscription_id, resource_group_name, networks)
     return networks
