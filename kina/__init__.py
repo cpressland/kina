@@ -3,19 +3,13 @@
 from typing import Annotated
 
 import typer
-from azure.identity import DefaultAzureCredential
 from rich.console import Console
 from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
 from rich.table import Table
 
-from kina.azure.helpers import get_default_subscription_id
-
 app = typer.Typer(no_args_is_help=True, pretty_exceptions_enable=False)
 kubectl = typer.Typer(no_args_is_help=True, help="Manage local Kubectl Configuration")
 app.add_typer(kubectl, name="kubectl")
-
-credential = DefaultAzureCredential()
-subscription_id = get_default_subscription_id()
 
 
 @app.command(name="create")
@@ -29,33 +23,17 @@ def cluster_create(
             help="Azure Locations to create Kubernetes Clusters in, comma seperated",
         ),
     ] = "uksouth",
-    no_cni: Annotated[
-        bool,
-        typer.Option(
-            "--no-cni",
-            help="Disable CNI for the AKS clusters. This is useful for testing purposes.",
-        ),
-    ] = False,
-    network_dataplane: Annotated[
-        str | None,
-        typer.Option(
-            "--network-dataplane",
-            "--dataplane",
-            "-d",
-            help=" Network Dataplane to use. Defaults to None.",
-        ),
-    ] = None,
 ) -> None:
     """Create a new Kina AKS Cluster.
 
     Args:
         locations (str): Azure Locations to create Kubernetes Clusters in, comma separated.
         no_cni (bool): Disable CNI for the AKS clusters. This is useful for testing purposes.
-        network_dataplane (str | None): Network Dataplane to use. Defaults to None.
 
     """
-    from kina.azure.kubernetes import configure_network_iam, create_aks_clusters
-    from kina.azure.resource_groups import create_resource_group
+    from kina.azure.kubernetes import configure_cluster_iam, create_aks_clusters
+    from kina.azure.registry import create_acr
+    from kina.azure.resource_groups import create_resource_group, update_resource_group_status
     from kina.azure.virtual_networks import create_virtual_networks
     from kina.kubectl import add_cluster_to_kubeconfig, set_current_context
 
@@ -68,60 +46,56 @@ def cluster_create(
         TimeElapsedColumn(),
         TextColumn("[progress.description]{task.description}"),
     ) as progress:
-        rg_task = progress.add_task("Creating Resource Group...", total=1)
-        vnet_task = progress.add_task("Creating Virtual Networks...", total=cluster_count + 1)
-        aks_task = progress.add_task("Creating AKS Clusters...", total=cluster_count + 1)
-        network_iam = progress.add_task("Configuring Network IAM...", total=cluster_count + 1)
-        kubectl_task = progress.add_task("Adding AKS Cluster to Kubeconfig...", total=cluster_count + 1)
+        task_rg = progress.add_task("Creating Resource Group...", total=1)
+        task_vnet = progress.add_task("Creating Virtual Networks...", total=cluster_count + 1)
+        task_acr = progress.add_task("Creating Container Registry...", total=1)
+        task_aks = progress.add_task("Creating AKS Clusters...", total=cluster_count + 1)
+        task_iam = progress.add_task("Creating Cluster IAM...", total=cluster_count + 1)
+        task_kubectl = progress.add_task("Adding AKS Cluster to Kubeconfig...", total=cluster_count + 1)
 
-        rg_name = create_resource_group(
-            credential=credential,
-            subscription_id=subscription_id,
-            locations=locations,
-        )
-        progress.update(rg_task, description=f"Created Resource Group: {rg_name}", advance=1)
+        rg_name = create_resource_group(locations=locations)
+        progress.update(task_rg, description=f"Created Resource Group: {rg_name}", advance=1)
         vnets = create_virtual_networks(
-            credential=credential,
-            subscription_id=subscription_id,
             locations=locations,
             resource_group_name=rg_name,
             rich_progress=progress,
-            rich_task=vnet_task,
+            rich_task=task_vnet,
         )
-        progress.update(vnet_task, description=f"Created Virtual Networks: {', '.join(vnets)}", advance=1)
+        progress.update(task_vnet, description=f"Created Virtual Networks: {', '.join(vnets)}", advance=1)
+        registry = create_acr(
+            resource_group_name=rg_name,
+            location=locations[0],
+        )
+        progress.update(task_acr, description=f"Created Container Registry: {registry}", advance=1)
         clusters = create_aks_clusters(
-            credential=credential,
-            subscription_id=subscription_id,
             virtual_network_names=vnets,
             resource_group_name=rg_name,
-            no_cni=no_cni,
-            network_dataplane=network_dataplane,
             rich_progress=progress,
-            rich_task=aks_task,
+            rich_task=task_aks,
         )
-        progress.update(aks_task, description=f"Created AKS Clusters: {', '.join(clusters)}", advance=1)
+        progress.update(task_aks, description=f"Created AKS Clusters: {', '.join(clusters)}", advance=1)
         for cluster in clusters:
-            progress.update(network_iam, description=f"Configuring Network IAM: {cluster}", advance=1)
-            configure_network_iam(
-                credential=credential,
-                subscription_id=subscription_id,
+            progress.update(task_iam, description=f"Creating Cluster IAM: {cluster}", advance=1)
+            configure_cluster_iam(
                 resource_group=rg_name,
                 cluster_name=cluster,
             )
-        progress.update(network_iam, description=f"Configured Network IAM: {', '.join(clusters)}", advance=1)
+        progress.update(task_iam, description=f"Created Cluster IAM: {', '.join(clusters)}", advance=1)
         for cluster in clusters:
-            progress.update(kubectl_task, description=f"Adding AKS Cluster to Kubeconfig: {cluster}", advance=1)
+            progress.update(task_kubectl, description=f"Adding AKS Cluster to Kubeconfig: {cluster}", advance=1)
             add_cluster_to_kubeconfig(
-                credential=credential,
-                subscription_id=subscription_id,
                 resource_group_name=rg_name,
                 cluster_name=cluster,
             )
         set_current_context(clusters[0])
         progress.update(
-            kubectl_task,
+            task_kubectl,
             description=f"Added AKS Clusters to Kubeconfig: {', '.join(clusters)}, set current context to {clusters[0]}",  # noqa: E501
             advance=1,
+        )
+        update_resource_group_status(
+            resource_group_name=rg_name,
+            status="Running",
         )
 
 
@@ -133,9 +107,10 @@ def cluster_delete(name: Annotated[str, typer.Argument()]) -> None:
         name (str): The name of the Kina AKS Cluster to delete.
 
     """
-    from kina.azure.resource_groups import delete_resource_group
+    from kina.azure.resource_groups import delete_resource_group, update_resource_group_status
 
-    deleted = delete_resource_group(credential, subscription_id, name)
+    update_resource_group_status(name, "Deleting")
+    deleted = delete_resource_group(name)
     if deleted:
         typer.echo(f"Deleted Resource Group: {name}")
     else:
@@ -157,7 +132,7 @@ def cluster_list(
     """
     from kina.azure.resource_groups import list_resource_groups
 
-    resource_groups = list_resource_groups(credential, subscription_id)
+    resource_groups = list_resource_groups()
     console = Console()
 
     if output == "table":
@@ -165,9 +140,11 @@ def cluster_list(
         t.add_column("Name")
         t.add_column("Location(s)")
         t.add_column("Created By")
+        t.add_column("Created At")
+        t.add_column("Status")
 
-        for resource_group_name, locations, username in resource_groups:
-            t.add_row(resource_group_name, locations, username)
+        for resource_group_name, locations, username, created_at, status in resource_groups:
+            t.add_row(resource_group_name, locations, username, created_at, status)
         console.print(t)
     elif output == "json":
         import json
@@ -177,8 +154,10 @@ def cluster_list(
                 "name": resource_group_name,
                 "locations": locations,
                 "created_by": username,
+                "created_at": created_at,
+                "status": status,
             }
-            for resource_group_name, locations, username in resource_groups
+            for resource_group_name, locations, username, created_at, status in resource_groups
         ]
         console.print(json.dumps(resource_groups_json, indent=2))
     elif output == "names":
