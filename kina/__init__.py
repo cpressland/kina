@@ -108,6 +108,7 @@ def cluster_delete(name: Annotated[str, typer.Argument()]) -> None:
 
     """
     from kina.azure.resource_groups import delete_resource_group, update_resource_group_status
+    from kina.kubectl import remove_from_kubeconfig
 
     update_resource_group_status(name, "Deleting")
     deleted = delete_resource_group(name)
@@ -115,6 +116,8 @@ def cluster_delete(name: Annotated[str, typer.Argument()]) -> None:
         typer.echo(f"Deleted Resource Group: {name}")
     else:
         typer.echo(f"Resource Group '{name}' not found or not managed by Kina.")
+
+    remove_from_kubeconfig(name)
 
 
 @app.command(name="list")
