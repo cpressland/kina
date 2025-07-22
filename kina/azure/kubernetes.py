@@ -126,26 +126,28 @@ def configure_cluster_iam(
         try:
             cluster = client_container.managed_clusters.get(resource_group, cluster_name)
             principal_id = cluster.as_dict()["identity"]["principal_id"]
+            kubelet_identity = cluster.as_dict()["identity_profile"]["kubeletidentity"]["object_id"]
             break
         except (KeyError, HttpResponseError):
             sleep(20)
             continue
 
     for role_id in role_ids.values():
-        for _ in range(30):
-            try:
-                client_authorization.role_assignments.create(
-                    scope=f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}",
-                    role_assignment_name=str(uuid4()),
-                    parameters={
-                        "role_definition_id": f"/providers/Microsoft.Authorization/roleDefinitions/{role_id}",
-                        "principal_id": principal_id,
-                    },
-                )
-                break
-            except HttpResponseError:
-                sleep(20)
-                continue
+        for identity in [principal_id, kubelet_identity]:
+            for _ in range(30):
+                try:
+                    client_authorization.role_assignments.create(
+                        scope=f"/subscriptions/{subscription_id}/resourceGroups/{resource_group}",
+                        role_assignment_name=str(uuid4()),
+                        parameters={
+                            "role_definition_id": f"/providers/Microsoft.Authorization/roleDefinitions/{role_id}",
+                            "principal_id": identity,
+                        },
+                    )
+                    break
+                except HttpResponseError:
+                    sleep(20)
+                    continue
 
 
 def run_aks_command(
