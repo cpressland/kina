@@ -156,5 +156,5 @@ def create_virtual_networks(
         subnets = [str(network) for network in ip_network(virual_network_cidr).subnets(new_prefix=24)]
         create_subnet(resource_group_name, vnet.name, "kube_nodes", subnets[0])
     if len(networks) > 1:
-        peer_vnets(subscription_id, resource_group_name, networks)
+        peer_vnets(resource_group_name, networks)
     return networks
